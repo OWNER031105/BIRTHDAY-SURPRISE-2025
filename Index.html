@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Birthday Surprise — Deepiksha</title>
+<style>
+  :root{
+    --pink1:#ff6b6b;
+    --pink2:#ff9aa2;
+    --glass: rgba(255,255,255,0.06);
+    --accent-ice: #aef0ff;
+  }
+  html,body{height:100%;margin:0;font-family:Poppins,system-ui,Segoe UI,Roboto,-apple-system; background:#0b0b20; color:#fff; -webkit-font-smoothing:antialiased;}
+  /* page container */
+  .section{ position:absolute; inset:0; display:none; flex-direction:column; align-items:center; overflow:auto; padding:28px; box-sizing:border-box; }
+  .section.active{ display:flex; }
+
+  /* top-right music toggle */
+  #musicToggle {
+    position:fixed; right:18px; top:14px; z-index:9999;
+    width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--pink1),var(--pink2)); box-shadow:0 8px 30px rgba(255,100,140,0.12); cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s;
+    border:none;
+  }
+  #musicToggle.paused{ background:rgba(255,255,255,0.06); box-shadow:0 6px 18px rgba(0,0,0,0.4); }
+  #musicToggle:active{ transform:scale(.98); }
+  /* pulse when playing */
+  #musicToggle.playing{ animation: pulse 1.8s infinite; }
+  @keyframes pulse{ 0%{ box-shadow:0 8px 30px rgba(255,100,140,0.18);} 50%{ box-shadow:0 14px 48px rgba(255,120,160,0.28);} 100%{ box-shadow:0 8px 30px rgba(255,100,140,0.18);} }
+
+  /* small icon inside */
+  #musicToggle svg{ width:20px;height:20px; fill:#fff; }
+
+  /* === PAGE 1 (Birthday) - replaced with letter-by-letter + fireworks === */
+  #page1{
+    /* keep relative for positioned fireworks */
+    background: radial-gradient(circle at center,#0a0012,#000);
+    justify-content:center;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* Animated gradient sky behind fireworks for subtle color */
+  #page1::before{
+    content:"";
+    position:absolute; inset:0; z-index:0;
+    background: linear-gradient(-45deg, rgba(255,107,107,0.08), rgba(179,136,255,0.06), rgba(110,203,255,0.06), rgba(255,154,162,0.06));
+    background-size: 400% 400%;
+    animation: skyShift 20s ease infinite;
+    pointer-events:none;
+  }
+  @keyframes skyShift{
+    0%{ background-position:0% 50%; }
+    50%{ background-position:100% 50%; }
+    100%{ background-position:0% 50%; }
+  }
+
+  /* Letter-by-letter reveal styling (page1 heading) */
+  .letter-reveal {
+    position:relative;
+    z-index:4; /* above fireworks */
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:14px;
+    text-align:center;
+    font-weight:700;
+    font-size:56px;
+    color:#fff;
+    margin:24px 12px;
+    text-shadow: 0 0 18px var(--pink1), 0 0 36px var(--pink2);
+  }
+  .letter-reveal .word { display:inline-block; white-space:pre; }
+  .letter-reveal .letter {
+    display:inline-block;
+    opacity:0;
+    transform:translateY(50px) scale(0.9);
+    filter:blur(10px);
+    animation: letterAppear 0.9s ease-out forwards;
+  }
+  @keyframes letterAppear{
+    0%{ opacity:0; transform:translateY(50px) scale(0.9); filter:blur(10px); }
+    60%{ opacity:1; transform:translateY(-8px) scale(1.05); filter:blur(3px); }
+    100%{ opacity:1; transform:translateY(0) scale(1); filter:blur(0); }
+  }
+  /* Glow on last letter */
+  .letter-reveal .word:last-child .letter:last-child{
+    animation: letterAppear 0.9s ease-out forwards, glowLoop 3s ease-in-out 5s infinite;
+  }
+  @keyframes glowLoop{
+    0%{ text-shadow: 0 0 12px var(--pink2), 0 0 24px var(--pink1); }
+    50%{ text-shadow: 0 0 28px #fff, 0 0 56px var(--pink1); }
+    100%{ text-shadow: 0 0 12px var(--pink2), 0 0 24px var(--pink1); }
+  }
+
+  /* CTA on page1 */
+  #page1 p{ z-index:4; color:#fff; margin-top:14px; font-size:18px; }
+  .cta{
+    margin-top:18px; padding:12px 26px; border-radius:28px; border:0; font-weight:700; cursor:pointer;
+    background:linear-gradient(90deg,var(--pink1),var(--pink2)); color:#fff; box-shadow:0 10px 36px rgba(255,110,150,0.14);
+    z-index:4;
+  }
+
+  /* Floating shapes (kept) */
+  .float-shape{ position:absolute; bottom:-160px; opacity:0.95; border-radius:50%; pointer-events:none; animation:floatUp linear infinite; }
+  @keyframes floatUp{ 0%{ transform:translateY(0) rotate(0deg); opacity:1 } 100%{ transform:translateY(-125vh) rotate(360deg); opacity:0 } }
+
+  /* Firework/sky-shot styles */
+  .fw-trail {
+    position: absolute;
+    width: 3px;
+    height: 14px;
+    border-radius: 50%;
+    background: linear-gradient(to top, rgba(255,255,255,0.95), rgba(255,255,255,0.2));
+    z-index:1;
+    pointer-events:none;
+    filter:drop-shadow(0 0 6px rgba(255,200,200,0.25));
+  }
+  .fw-particle {
+    position:absolute;
+    width:6px; height:6px; border-radius:50%;
+    pointer-events:none;
+    z-index:2;
+    will-change: transform, opacity;
+    filter:drop-shadow(0 0 10px rgba(255,200,200,0.25));
+  }
+  @keyframes particleMove {
+    0%{ opacity:1; transform:translate(0,0) scale(1); filter:blur(0); }
+    80%{ opacity:0.95; filter:blur(0); }
+    100%{ opacity:0; transform:translate(var(--x), var(--y)) scale(0.8); filter:blur(6px); }
+  }
+
+  /* === PAGE 2 (Password) === */
+  #page2{ background: linear-gradient(180deg,#020024,#004e92); align-items:center; justify-content:center; }
+  .pw-card{ width:100%; max-width:560px; background:var(--glass); padding:28px; border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,0.6); text-align:center; }
+  .pw-card h2{ margin:0 0 8px; color:var(--accent-ice); }
+  .pw-card .explain{ color:rgba(255,255,255,0.85); margin-bottom:12px; font-size:15px; }
+  #passwordInput{ width:66%; max-width:320px; padding:10px 12px; border-radius:10px; border:0; background:rgba(255,255,255,0.04); color:#fff; font-size:16px; text-align:center; }
+  .pw-actions{ margin-top:12px; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; }
+  .pw-btn{ background:linear-gradient(90deg,#00e5ff,#00b3b3); border:0; padding:10px 14px; border-radius:12px; color:#000; font-weight:800; cursor:pointer; box-shadow:0 10px 30px rgba(0,200,255,0.12); }
+  .pw-toggle{ color:#aef0ff; cursor:pointer; font-size:14px; user-select:none; }
+
+  .numbers-bg{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .numbers-bg span{ position:absolute; color:rgba(255,255,255,0.06); font-weight:700; user-select:none; text-shadow:0 0 8px rgba(0,255,255,0.06); transform:translateY(0); }
+
+  /* === PAGE 3 (Q&A) === */
+  #page3{ background: linear-gradient(180deg,#0b1220,#172238); align-items:flex-start; padding-top:34px; }
+  .qa-container{ width:100%; max-width:920px; margin:0 auto 40px; display:flex; flex-direction:column; gap:14px; padding-bottom:20px; }
+  .qa-header{ text-align:center; color:var(--accent-ice); margin-bottom:6px; }
+  .qa-header p{ color:rgba(255,255,255,0.65); margin-top:6px; font-size:14px; }
+  .qa-card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:14px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.45); }
+  .qa-card .q{ color:#c6fbff; font-weight:700; font-size:16px; }
+  .qa-card textarea{ width:100%; min-height:64px; max-height:220px; resize:vertical; padding:10px; margin-top:8px; border-radius:10px; border:0; background:rgba(255,255,255,0.03); color:#fff; font-size:15px; outline:none; }
+  .qa-actions{ display:flex; gap:14px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+  .qa-continue{ padding:12px 28px; border-radius:28px; border:0; font-weight:800; cursor:pointer; background:linear-gradient(90deg,#ff9aa2,#ff6b6b); color:#210b12; box-shadow:0 12px 32px rgba(255,110,160,0.18); }
+
+  /* === PAGE 4 (Warm Wishes) === */
+  #page4{ background: linear-gradient(135deg,#2b0b26,#40143f 40%, #ff6b9a 100%); align-items:center; padding-top:44px; }
+  .wish-card{ width:100%; max-width:930px; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); border-radius:18px; padding:28px; box-shadow:0 30px 80px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.04); }
+  .wish-title{ text-align:center; color:#ffd8f0; font-size:28px; margin-bottom:12px; }
+  .wish-text{ color:#fff; font-size:18px; line-height:1.8; white-space:pre-wrap; text-align:left; }
+  .wish-actions{ display:flex; gap:12px; justify-content:center; margin-top:18px; flex-wrap:wrap; }
+
+  /* === PAGE 5 (Surprise) === */
+  #page5{ background: radial-gradient(circle at center, #2a021a, #3d0930); align-items:center; justify-content:flex-start; padding-top:34px; overflow:hidden; }
+  .surprise-card{ width:100%; max-width:900px; padding:28px; border-radius:16px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); box-shadow:0 30px 80px rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.035); }
+  .surprise-title{ text-align:center; font-size:28px; color:#fff; margin-bottom:10px; text-shadow:0 0 20px rgba(255,120,160,0.14); }
+  .surprise-actions{ display:flex; gap:14px; justify-content:center; margin-top:16px; }
+  .surprise-btn{ padding:12px 26px; border-radius:28px; border:0; cursor:pointer; font-weight:800; background:linear-gradient(90deg,var(--pink1),var(--pink2)); color:#fff; box-shadow:0 14px 36px rgba(255,100,140,0.18); }
+  .surprise-btn.secondary{ background:linear-gradient(90deg,#ffd6e0,#ffb6c1); color:#210b12; }
+
+  /* continuous confetti elements (injected) */
+  .confetti{ position:fixed; left:0; top:0; width:12px; height:18px; opacity:0.95; transform-origin:center; border-radius:2px; pointer-events:none; animation:confFloat linear infinite; }
+  @keyframes confFloat{ 0%{ transform:translateY(-10vh) rotate(0deg) } 100%{ transform:translateY(120vh) rotate(360deg) } }
+
+  /* responsive */
+  @media (max-width:680px){
+    .wish-text{ font-size:16px; }
+    .letter-reveal{ font-size:40px; gap:8px; }
+    .pw-card{ padding:18px; }
+    .qa-container{ padding: 0 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: Birthday (REPLACED) -->
+<section id="page1" class="section active" aria-label="Birthday page">
+  <!-- Fireworks canvas area sits behind the text, but we use DOM elements positioned absolutely -->
+  <h1 class="letter-reveal" aria-hidden="false">
+    <span class="word">Happy</span>
+    <span class="word">Birthday</span>
+    <span class="word">DEEPIKSHA</span>
+  </h1>
+
+  <p style="z-index:4">Wishing you endless joy, laughter, and love — click the gift to continue the surprise.</p>
+  <button class="cta" onclick="goTo('page2')">Open Secret Page 🎁</button>
+</section>
+
+<!-- PAGE 2: Password -->
+<section id="page2" class="section" aria-label="Password page">
+  <div class="numbers-bg" id="numbersBg" aria-hidden="true"></div>
+  <div class="pw-card" role="group" aria-label="Password card">
+    <h2>🔒 Secret Code</h2>
+    <div class="explain">Enter the code to unlock the next page</div>
+    <input id="passwordInput" type="password" inputmode="numeric" placeholder="Enter password" aria-label="password" />
+    <div class="pw-actions">
+      <div id="togglePw" class="pw-toggle" role="button" tabindex="0">👁️ Show</div>
+      <button class="pw-btn" id="pwSubmit">Unlock</button>
+      <button class="pw-btn" onclick="goTo('page1')">Back</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 3: Q&A -->
+<section id="page3" class="section" aria-label="Question and answer page">
+  <div class="qa-container" role="main">
+    <div class="qa-header"><h2>💭 Answer These Questions</h2><p>Write short honest answers — everything is private here.</p></div>
+
+    <div class="qa-card"><div class="q">Q1) WHERE WE HAVE MET?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q2) WHAT YOU HAVE LOST WHICH WE HAVE FOUND TOGETHER?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q3) WHAT IS YOUR FAVOURITE CHOCOLATE WHICH CONSIST OF GIFTS INSIDE IT?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q4) WHO IS THE FIRST PERSON COMES IN YOUR MIND WHEN YOU FALL IN TROUBLE?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q5) WHAT IS THE BEST MEMORY OF 2024-2025?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q6) WHAT IS THE BEST BIRTHDAY GIFT A PERSON CAN GIVE YOU?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q7) WHICH IS YOUR DREAM PLACE YOU WANT TO VISIT WITH YOUR MOST LOVED PERSON?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q8) WHICH THING COMES IN YOUR MIND WHEN YOU REALISE THAT YOU DID A BIG MISTAKE?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q9) WHICH IS YOUR FAVOURITE SONG?</div><textarea placeholder="Write your answer..."></textarea></div>
+    <div class="qa-card"><div class="q">Q10) WHAT IS YOUR FAVOURITE COLOUR?</div><textarea placeholder="Write your answer..."></textarea></div>
+
+    <div class="qa-actions">
+      <button class="qa-continue" onclick="goTo('page4')">➡️ Continue to Warm Wishes</button>
+      <button class="qa-continue" style="background:linear-gradient(90deg,#bde6ff,#7ec8ff)" onclick="goTo('page2')">⬅️ Back to Password</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 4: Warm Wishes -->
+<section id="page4" class="section" aria-label="Warm wishes">
+  <div class="wish-card" role="article" aria-label="Warm birthday message">
+    <div class="wish-title">💖 My Warmest Wish For You, Deepiksha</div>
+    <div class="wish-text" id="wishText">
+HAPPIEST BIRTHDAY TO MY SWEETEST PERSON (DEEPIKSHA ❤️)
+HEY DEEPIKSHA, Finally a special day comes after not having a single talk for last 3 months but believe me there were not a single minute I haven’t thought about you. Whenever a day start I always wished you a Beautiful Good Morning to you whenever I go to sleep I always think of you that you are doing good in your life and wished you a Good Night. First I have to wish you from bottom of my heart that “HAPPY BIRTHDAY DEEPIKSHA, GOD BLESS YOU AND GIVE YOU STRENGTH TO ACHIEVE ALL YOUR GOALS AND BE VERY SUCCESSFULL IN LIFE’’. And you are the bravest and strongest girl I have met in my life I haven’t seen someone who is suffering from so much pain and difficulties in life whether its about you are suffering from family problems and something personal but believe me you have got the gods blessing which always help you to stay stronger in tough times. Lets talk about something which is very important that is you and yes it's always you who is most important. So do you know you have got the most beautiful eyes in which someone can live his whole life while just watching them. But that’s not the end you got the most precious thing that is your dimple you can make someone smile without saying something your adorable smile is enough to forgot someone’s pain and everybody wants a wife like you who can say bye while going to office and make his day stress free for the rest of the day. And you got the lovely voice may your family says that you speak like crow but believe me you are not and you know the one fact that I can listen you whole day without saying single words in between and you know whenever you are talking I always choose to listen you while I’m with you or on call it’s the best thing for me that I can hear you and I always regretted after fighting with you to not get a single call or text from you is the worst part of my life. I can’t tell you last 3 months were the worst months for me as I didn’t show you and not even heard a single word from you. It was all about how is it going but let it be everything is written in good way. I just want to say that YES I’m missing you so much but don’t want to disturb you. Hoping that you are doing really amazing things and living happily without me. And I want you to be happy whatever the circumstances are. But definitely this message is not to disturb you or not to make you realise that I’m missing you. Because you know as well your absence always give me a pain whether its in the library or not getting call from you more than one day. I always feel grateful about our meeting yes that’s the beautiful memory I have stored in my life. One thing relates us maybe you remember its about that two crows who always choose to sat together, when we were sitting together and look up and finding that crows were sitting together is something meaningful when we don’t sat together then crows also not sat together and this happened all the time. Thank you so much DEEPIKSHA for giving me the best memories of my life its just about only 1 year but I feel like you are my last life’s soulmate as we shared a best bond together you can deny all this thing but you can not speak lie from yourself. There are a lot to say for you because you are the damn precious thing to me but I’m not gonna speak too much as you already know what you mean to me and how much I always used to cheer you and stand behind you. Just remember one thing whenever you can’t handle any difficult situation alone then don’t forget to call me you are the only one who is always free to call me whenever you are in the need of me I will be definitely there if your family chooses not to support you but I will be there to support you. I respect you a lot DEEPIKSHA. BE HAPPY, BE SAFE, BE STRONG AND BE THE BRAVEST. That's all I wanted to say SWEETU ❤️.
+    </div>
+
+    <div class="wish-actions">
+      <button class="qa-continue" onclick="goTo('page3')" style="background:linear-gradient(90deg,#bde6ff,#7ec8ff)">⬅️ Back to Q&A</button>
+      <button class="qa-continue" onclick="goTo('page5')">➡️ Continue to Surprise</button>
+    </div>
+  </div>
+</section>
+
+<!-- PAGE 5: Surprise -->
+<section id="page5" class="section" aria-label="Surprise page">
+  <div class="surprise-card">
+    <div class="surprise-title">🎁 Surprise — Open Your Gift</div>
+    <div style="text-align:center; color:rgba(255,255,255,0.9); margin-bottom:8px;">Click the gift to open the special surprise (opens in a new tab)</div>
+    <div class="surprise-actions">
+      <button class="surprise-btn" id="openSurprise">🎁 Open Your Surprise</button>
+      <button class="surprise-btn secondary" onclick="goTo('page4')">⬅️ Back to Wishes</button>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ---------- Page navigation ---------- */
+function goTo(id){
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const t = document.getElementById(id);
+  t.classList.add('active');
+  // reset scroll to top for pages that scroll
+  t.scrollTop = 0;
+  // accessibility focus
+  setTimeout(()=> t.focus?.(), 60);
+}
+
+/* ---------- Password logic ---------- */
+const pwInput = document.getElementById('passwordInput');
+document.getElementById('pwSubmit').addEventListener('click', ()=>{
+  if (pwInput.value.trim() === "03112005"){
+    goTo('page3');
+  } else {
+    alert("Incorrect password — try again.");
+  }
+});
+document.getElementById('togglePw').addEventListener('click', function(){
+  if (pwInput.type === 'password'){ pwInput.type='text'; this.textContent = '🙈 Hide'; }
+  else { pwInput.type='password'; this.textContent = '👁️ Show'; }
+});
+pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pwSubmit').click(); });
+
+/* ---------- animated numbers background for page2 ---------- */
+(function createNumbers(){
+  const container = document.getElementById('numbersBg');
+  const total = 48;
+  for(let i=0;i<total;i++){
+    const sp = document.createElement('span');
+    sp.textContent = Math.floor(Math.random()*10);
+    sp.style.left = (Math.random()*95) + 'vw';
+    sp.style.top  = (Math.random()*120) + 'vh';
+    sp.style.fontSize = (12 + Math.random()*36) + 'px';
+    const dur = 6 + Math.random()*9;
+    sp.style.animationDuration = dur + 's';
+    sp.style.opacity = (0.03 + Math.random()*0.12).toString();
+    container.appendChild(sp);
+  }
+})();
+
+/* ---------- floating shapes only on page1 ---------- */
+(function floatingShapes(){
+  setInterval(()=>{
+    if (!document.getElementById('page1').classList.contains('active')) return;
+    const el = document.createElement('div');
+    el.className = 'float-shape';
+    const size = 18 + Math.random()*48;
+    el.style.width = size + 'px';
+    el.style.height = (size * (0.85 + Math.random()*0.5)) + 'px';
+    el.style.left = (4 + Math.random()*92) + 'vw';
+    el.style.background = `linear-gradient(135deg, hsl(${Math.random()*360} 80% 66%), hsl(${Math.random()*360} 80% 56%))`;
+    el.style.animationDuration = (6 + Math.random()*8) + 's';
+    document.body.appendChild(el);
+    setTimeout(()=> el.remove(), 11000);
+  }, 320);
+})();
+
+/* ---------- Surprise page confetti (continuous) ---------- */
+(function createConfettiLoop(){
+  function spawn(){
+    if (!document.getElementById('page5').classList.contains('active')) { setTimeout(spawn, 400); return; }
+    // create a few confetti at random x positions
+    for(let i=0;i<6;i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = (Math.random()*100) + 'vw';
+      c.style.width = (6 + Math.random()*14) + 'px';
+      c.style.height = (10 + Math.random()*20) + 'px';
+      c.style.background = `linear-gradient(180deg, hsl(${Math.random()*40+330} 80% 70%), hsl(${Math.random()*40+300} 60% 50%))`;
+      c.style.animationDuration = (6 + Math.random()*8) + 's';
+      c.style.opacity = (0.85 + Math.random()*0.15);
+      document.body.appendChild(c);
+      // remove after animation
+      setTimeout(()=> c.remove(), (parseFloat(c.style.animationDuration)*1000) + 600 );
+    }
+    setTimeout(spawn, 900);
+  }
+  spawn();
+})();
+
+/* ---------- Open surprise link ---------- */
+document.getElementById('openSurprise').addEventListener('click', ()=>{
+  // opens in new tab
+  window.open('https://go.screenpal.com/watch/cT6OXvnb8dU', '_blank', 'noopener');
+});
+
+/* ---------- PAGE1: letter-by-letter reveal script ---------- */
+(function letterSplit(){
+  const container = document.querySelector('.letter-reveal');
+  if (!container) return;
+  document.querySelectorAll('.letter-reveal .word').forEach((word, wordIndex) => {
+    const letters = word.textContent.split('');
+    word.textContent = '';
+    letters.forEach((letter, i) => {
+      const span = document.createElement('span');
+      span.textContent = letter;
+      span.className = 'letter';
+      // slow graceful timing for letters + words
+      span.style.animationDelay = `${i * 0.25 + wordIndex * 1.5}s`;
+      word.appendChild(span);
+    });
+  });
+})();
+
+/* ---------- PAGE1: realistic fireworks (sky shots) ---------- */
+(function fireworksEngine(){
+ const colors = [
+  '#ff3b3b', // red
+  '#ff9a00', // orange
+  '#ffe500', // yellow
+  '#00ff9d', // green
+  '#00c8ff', // cyan
+  '#3b82f6', // blue
+  '#b388ff', // violet
+  '#ff6bcb', // pink
+  '#ffffff'  // white sparkle
+];
+  // Launch a firework: rise a trail then burst into particles
+  function launchFirework(){
+    // random x, biased to center so background looks balanced
+    const margin = 0.1 * window.innerWidth;
+    const x = margin + Math.random() * (window.innerWidth - margin*2);
+    const trail = document.createElement('div');
+    trail.className = 'fw-trail';
+    trail.style.left = `${x}px`;
+    trail.style.bottom = `-10px`;
+    trail.style.height = `${12 + Math.random()*20}px`;
+    trail.style.opacity = 0.95;
+    document.body.appendChild(trail);
+
+    // Animate the trail (using CSS transform through JS)
+    // We'll simulate vertical rise by tweening bottom
+    const riseDuration = 900 + Math.random()*600; // ms
+    const risePeak = window.innerHeight * (0.25 + Math.random() * 0.45); // where it bursts
+    const start = performance.now();
+    function tick(now){
+      const t = Math.min((now - start) / riseDuration, 1);
+      // ease-out curve
+      const eased = 1 - Math.pow(1 - t, 3);
+      trail.style.transform = `translateY(${-eased * risePeak}px)`;
+      if (t < 1) requestAnimationFrame(tick);
+      else {
+        // burst at current x, y
+        const rect = trail.getBoundingClientRect();
+        const burstX = rect.left + rect.width/2;
+        const burstY = rect.top + rect.height/2;
+        trail.remove();
+        createBurst(burstX, burstY);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // create burst of particles at x,y (screen coords)
+  function createBurst(x, y){
+    const particles = 24 + Math.floor(Math.random()*16);
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    for (let i=0;i<particles;i++){
+      const p = document.createElement('div');
+      p.className = 'fw-particle';
+      p.style.left = `${x - 3}px`;
+      p.style.top = `${y - 3}px`;
+      // small particle color gradient
+      p.style.background = `radial-gradient(circle, ${color}, transparent 60%)`;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = (70 + Math.random()*130); // px travel
+      const dx = Math.cos(angle) * speed;
+      const dy = Math.sin(angle) * speed;
+      p.style.setProperty('--x', `${dx}px`);
+      p.style.setProperty('--y', `${dy}px`);
+      const dur = 1100 + Math.random()*900; // ms
+      p.style.animation = `particleMove ${dur}ms cubic-bezier(.2,.8,.2,1) forwards`;
+      // slight scale and staggered delay for prettier look
+      p.style.transform = `scale(${0.8 + Math.random()*0.8})`;
+      p.style.opacity = 0.95;
+      document.body.appendChild(p);
+      // remove after animation
+      setTimeout(()=> p.remove(), dur + 50);
+    }
+    // small secondary glow center that fades
+    const core = document.createElement('div');
+    core.style.position = 'absolute';
+    core.style.left = `${x - 6}px`;
+    core.style.top = `${y - 6}px`;
+    core.style.width = '12px';
+    core.style.height = '12px';
+    core.style.borderRadius = '50%';
+    core.style.background = `radial-gradient(circle, rgba(255,255,255,0.9), ${color} 40%, transparent 60%)`;
+    core.style.filter = 'blur(6px)';
+    core.style.zIndex = 2;
+    document.body.appendChild(core);
+    setTimeout(()=> core.remove(), 700 + Math.random()*600);
+  }
+
+  // Launch fireworks continuously but only when page1 active
+  let fwInterval;
+  function startLoop(){
+    if (fwInterval) return;
+    fwInterval = setInterval(()=>{
+      // only launch if page1 is active
+      if (!document.getElementById('page1').classList.contains('active')) return;
+      // launch 1-5 fireworks per cycle for variety
+      const count = 1 + Math.floor(Math.random()*3);
+      for (let i=0;i<count;i++){
+        // small random delay between launches in this cycle
+        setTimeout(launchFirework, i * 240 + Math.random()*400);
+      }
+    }, 900 + Math.random()*800);
+  }
+  function stopLoop(){
+    if (!fwInterval) return;
+    clearInterval(fwInterval);
+    fwInterval = null;
+    // remove any stray trails/particles/cores left in DOM when stopping
+    document.querySelectorAll('.fw-trail, .fw-particle').forEach(el => el.remove());
+  }
+
+  // start/stop based on active page
+  // OBSERVE the #page1 element's class attribute so we respond exactly to it
+  const page1El = document.getElementById('page1');
+  const observer = new MutationObserver(()=> {
+    const page1Active = page1El.classList.contains('active');
+    if (page1Active) startLoop(); else stopLoop();
+  });
+  // observe changes to attributes (class)
+  observer.observe(page1El, { attributes: true, attributeFilter: ['class'] });
+
+  // also start on load if page1 active
+  if (page1El.classList.contains('active')) startLoop();
+})();
+</script>
+</body>
+</html>
